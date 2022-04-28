@@ -114,4 +114,171 @@ public class ProdutoTest {
 
     }
 
+    @Test
+    @DisplayName("Validar que não é possível cadastrar um produto caso o usuário não esteja logado")
+    public void testCriarProdutoComUsuarioDesologado(){
+
+        ProdutoPojo produto = ProdutoDataFactory.criarProdutoComumComOvalorIgualA(4999.99);
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(produto)
+        .when()
+            .post("/v2/produtos")
+        .then()
+            .assertThat()
+                .statusCode(401);
+
+    }
+
+    @Test
+    @DisplayName("Validar que não é possível cadastrar um produto Com algum dos campos obrigatórios em setar preenchidos")
+    public void testCriarProdutoIncompleto(){
+
+        ProdutoPojo produto = ProdutoDataFactory.criarProdutoComumComOvalorIgualA(4999.99);
+        produto.setProdutoNome(null);
+
+        given()
+            .contentType(ContentType.JSON)
+            .header("token", this.token)
+            .body(produto)
+        .when()
+            .post("/v2/produtos")
+        .then()
+            .assertThat()
+                .body("error", equalTo("produtoNome, produtoValor e produtoCores são campos obrigatórios"))
+                .statusCode(400);
+
+    }
+
+    @Test
+    @DisplayName("Realizar uma busca simples de um produto pelo ID")
+    public void testBuscarProdutoPeloId(){
+
+        ProdutoPojo produto = ProdutoDataFactory.criarProdutoComumComOvalorIgualA(4999.99);
+
+        // cadastrando o produto e salvando o ID
+        int produtoId = given()
+            .contentType(ContentType.JSON)
+            .header("token", this.token)
+            .body(produto)
+        .when()
+            .post("/v2/produtos")
+        .then()
+            .extract()
+            .path("data.produtoId");
+
+        // fazendo a consulta do produto pelo Id
+        given()
+            .contentType(ContentType.JSON)
+            .header("token", this.token)
+        .when()
+            .get("/v2/produtos/" + produtoId)
+        .then()
+            .assertThat()
+                .body("message", equalTo("Detalhando dados do produto"))
+                .body("data.produtoId", greaterThanOrEqualTo(0))
+                .body("data.produtoNome", equalTo("Playstation 5"))
+                .body("data.produtoValor", equalTo(new Float(4999.99)))
+                .body("data.produtoCores", equalTo(new ArrayList<>(Arrays.asList("preto", "branco"))))
+                .body("data.produtoUrlMock", equalTo(""))
+                .body("data.componentes.get(0).componenteNome", equalTo("Controle"))
+                .body("data.componentes.get(0).componenteQuantidade", equalTo(1))
+                .body("data.componentes.get(1).componenteNome", equalTo("Jogo Legal"))
+                .body("data.componentes.get(1).componenteQuantidade", equalTo(2))
+                .statusCode(200);
+
+    }
+
+    @Test
+    @DisplayName("Realizar uma busca por um produto sem o possuir um usuário logado")
+    public void testBuscarUmProdutoSemEstarLogado(){
+
+        ProdutoPojo produto = ProdutoDataFactory.criarProdutoComumComOvalorIgualA(4999.99);
+
+        // cadastrando o produto e salvando o ID
+        int produtoId = given()
+            .contentType(ContentType.JSON)
+            .header("token", this.token)
+            .body(produto)
+        .when()
+            .post("/v2/produtos")
+        .then()
+            .extract()
+            .path("data.produtoId");
+
+        // buscando pelo produto
+        given()
+            .contentType(ContentType.JSON)
+        .when()
+            .get("/v2/produtos/" + produtoId)
+        .then()
+            .assertThat()
+                .statusCode(401);
+
+    }
+
+    @Test
+    @DisplayName("Realizar uma busca por todos os produtos")
+    public void testBuscarTodosOsProdutos(){
+
+        given()
+            .contentType(ContentType.JSON)
+            .header("token", this.token)
+        .when()
+            .get("/v2/produtos")
+        .then()
+            .assertThat()
+                .body("message", equalTo("Listagem de produtos realizada com sucesso"))
+                .statusCode(200);
+
+    }
+
+    @Test
+    @DisplayName("Realizar uma busca por todos os produtos aplicando filtragem pelo nome")
+    public void testBuscarProdutosFiltrandoPeloNome(){
+
+        given()
+            .contentType(ContentType.JSON)
+            .header("token", this.token)
+        .when()
+            .get("/v2/produtos?produtoNome=Play")
+        .then()
+            .assertThat()
+                .body("message", equalTo("Listagem de produtos realizada com sucesso"))
+                .statusCode(200);
+
+    }
+
+    @Test
+    @DisplayName("Realizar uma busca por todos os produtos aplicando filtragem pela cor")
+    public void testBuscarProdutosFiltrandoPelaCor(){
+
+        given()
+            .contentType(ContentType.JSON)
+            .header("token", this.token)
+        .when()
+            .get("/v2/produtos?produtoCor=preto")
+        .then()
+            .assertThat()
+                .body("message", equalTo("Listagem de produtos realizada com sucesso"))
+                .statusCode(200);
+
+    }
+
+    @Test
+    @DisplayName("Realizar uma busca por produtos sem o possuir um usuário logado")
+    public void testBuscarProdutosSemEstarLogado(){
+
+        given()
+            .contentType(ContentType.JSON)
+        .when()
+            .get("/v2/produtos")
+        .then()
+            .assertThat()
+                .statusCode(401);
+
+    }
+
+
 }
