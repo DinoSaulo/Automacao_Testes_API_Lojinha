@@ -13,6 +13,7 @@ import pojo.ProdutoPojo;
 import pojo.UsuarioPojo;
 // STATIC IMPORTS
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static io.restassured.RestAssured.*;
@@ -36,7 +37,6 @@ public class ProdutoTest {
         this.token = given()
                 .contentType(ContentType.JSON)
                 .body(usuario)
-
             .when()
                 .post("/v2/login")
             .then()
@@ -84,6 +84,34 @@ public class ProdutoTest {
                 .statusCode(422);
     }
 
+    @Test
+    @DisplayName("Validar que cadstro do produto e retorno obtido")
+    public void testValidarCriarProduto(){
 
+        ProdutoPojo produto = ProdutoDataFactory.criarProdutoComumComOvalorIgualA(4999.99);
+
+        // tentar inserir um produto com o valor 7000.01 e o validar que a mensagem de erro foi apresentada
+        // e o statusCode retornado foi 422
+        given()
+            .contentType(ContentType.JSON)
+            .header("token", this.token)
+            .body(produto)
+        .when()
+            .post("/v2/produtos")
+        .then()
+            .assertThat()
+                .body("message", equalTo("Produto adicionado com sucesso"))
+                .body("data.produtoId", greaterThanOrEqualTo(0))
+                .body("data.produtoNome", equalTo("Playstation 5"))
+                .body("data.produtoValor", equalTo(new Float(4999.99)))
+                .body("data.produtoCores", equalTo(new ArrayList<>(Arrays.asList("preto", "branco"))))
+                .body("data.produtoUrlMock", equalTo(""))
+                .body("data.componentes.get(0).componenteNome", equalTo("Controle"))
+                .body("data.componentes.get(0).componenteQuantidade", equalTo(1))
+                .body("data.componentes.get(1).componenteNome", equalTo("Jogo Legal"))
+                .body("data.componentes.get(1).componenteQuantidade", equalTo(2))
+                .statusCode(201);
+
+    }
 
 }
